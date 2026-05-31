@@ -85,3 +85,21 @@ def scheduled_parsing():
 # Запуск 18-го числа каждого месяца
 schedule.every().month.on(18).do(scheduled_parsing)
 
+def main_parsing_task():
+    logger.info("Начало процесса парсинга")
+    base_url = "https://example-shop.com/products"
+    all_data = parse_multiple_pages(base_url, max_pages=5)
+    if all_data:
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        filename = f"products_{timestamp}.csv"
+        save_to_csv(all_data, filename)
+        logger.info(f"Данные успешно сохранены в {filename}")
+        logger.info(f"Обработано {len(all_data)} товаров")
+        return all_data
+    else:
+        logger.warning("Данные не были получены")
+        return []
+
+# Вызов комплексного сценария
+results = main_parsing_task()
+
