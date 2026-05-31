@@ -65,4 +65,15 @@ def save_to_excel(data, filename='parsed_data.xlsx'):
     df = pd.DataFrame(data)
     df.to_excel(filename, index=False)
 
+def safe_request(url, retries=3):
+    for attempt in range(retries):
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response
+        except requests.RequestException as e:
+            logger.warning(f"Попытка {attempt + 1} не удалась: {e}")
+            time.sleep(2)
+    logger.error(f"Не удалось получить данные после {retries} попыток")
+    return None
 
