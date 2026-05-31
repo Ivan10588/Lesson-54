@@ -83,7 +83,7 @@ def emkashop_parser(url):
         except AttributeError as e:
             logger.warning(f"Пропущен элемент emkashop из‑за ошибки: {e}")
             continue
-
+    logger.info(f"Найдено товаров: {len(items)}")
     return items
 
 def dayoffmood_parser(url):
@@ -118,7 +118,7 @@ def dayoffmood_parser(url):
         except AttributeError as e:
             logger.warning(f"Пропущен элемент dayoffmood из‑за ошибки: {e}")
             continue
-
+    logger.info(f"Найдено товаров: {len(items)}")
     return items
 
 def parse_multiple_pages(base_url, parser_func, max_pages=3):
@@ -129,10 +129,14 @@ def parse_multiple_pages(base_url, parser_func, max_pages=3):
             url = base_url
         else:
             parsed_url = urlparse(base_url)
-            if 'emkashop' in parsed_url.netloc:
-                url = f"{base_url}&page={page}"
-            elif 'dayoffmood' in parsed_url.netloc:
-                url = f"{base_url}?page={page}"
+            if page == 1:
+                url = base_url
+            else:
+                parsed_url = urlparse(base_url)
+                if 'emkashop' in parsed_url.netloc:
+                    url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?page={page}"
+                elif 'dayoffmood' in parsed_url.netloc:
+                    url = f"{base_url}?page={page}"
 
         logger.info(f"Парсинг страницы {page}: {url}")
         data = parser_func(url)
@@ -223,8 +227,8 @@ def main_comparison_task():
 
             logger.info("=== РЕЗУЛЬТАТЫ СРАВНЕНИЯ ===")
             logger.info(f"Всего найдено общих товаров: {total_common}")
-            logger.info(f"Выгоднее в emkashop: {dns_better} товаров")
-            logger.info(f"Выгоднее в dayoffmood: {eldorado_better} товаров")
+            logger.info(f"Выгоднее в emkashop: {emkashop_better} товаров")
+            logger.info(f"Выгоднее в dayoffmood: {dayoffmood_better} товаров")
             logger.info(f"Цены равны: {equal} товаров")
 
             if comparison_data:
