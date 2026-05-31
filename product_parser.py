@@ -26,19 +26,28 @@ def safe_request(url, retries=3):
         return None
 
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Encoding': 'gzip, deflate',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1'
     }
 
     for attempt in range(retries):
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=headers, timeout=15)
             if response.status_code == 200:
                 return response
+            elif response.status_code in [401, 503]:
+                logger.warning(f"Сервер вернул код {response.status_code} — возможно, требуется дополнительная аутентификация или сайт перегружен")
+                time.sleep(10)
             else:
                 logger.warning(f"Попытка {attempt + 1} не удалась: код {response.status_code}")
         except requests.RequestException as e:
             logger.warning(f"Попытка {attempt + 1} не удалась: {e}")
         time.sleep(2)
+
     logger.error(f"Не удалось получить данные после {retries} попыток: {url}")
     return None
 
@@ -129,7 +138,7 @@ def parse_multiple_pages(base_url, parser_func, max_pages=3):
         logger.info(f"Парсинг страницы {page}: {url}")
         data = parser_func(url)
         all_data.extend(data)
-        time.sleep(1)
+        time.sleep(5)
 
     return all_data
 
@@ -172,8 +181,8 @@ def main_comparison_task():
     """Основной процесс сравнения цен"""
     logger.info("Начало процесса сравнения цен DNS и Эльдорадо")
 
-    dns_url = "https://www.dns-shop.ru/catalog/17a8a01d16404e77/smartfony/?brand=apple&utm_referrer=https%3A%2F%2Fwww.dns-shop.ru%2Fcatalog%2Faf47fe7c3bae7fd7%2Fsmartfony-i-gadzety%2F"
-    eldorado_url = "https://www.eldorado.ru/c/smartfony/tag/apple-iphone-17-pro-max/"
+    dns_url = "https://www.dns-shop.ru/catalog/17a8a01d16404e77/smartfony/"
+    eldorado_url = "https://www.eldorado.ru/c/smartfony/"
 
     logger.info("Парсинг DNS...")
     dns_data = parse_multiple_pages(dns_url, dns_parser, max_pages=2)
@@ -181,6 +190,8 @@ def main_comparison_task():
 
     logger.info("Парсинг Эльдорадо...")
     eldorado_data = parse_multiple_pages(eldorado_url, eldorado_parser, max_pages=2)
+
+    comparison_data = []
 
     if dns_data or eldorado_data:
         comparison_data = compare_prices(dns_data, eldorado_data)
