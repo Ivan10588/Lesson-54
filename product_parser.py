@@ -52,3 +52,17 @@ def parse_multiple_pages(base_url, max_pages=5):
             logger.error(f"Не удалось загрузить страницу {page}")
     return all_data
 
+def save_to_csv(data, filename='parsed_data.csv'):
+    df = pd.DataFrame(data)
+    df.to_csv(filename, index=False, encoding='utf-8')
+
+def save_to_json(data, filename='parsed_data.json'):
+    import json
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def save_to_excel(data, filename='parsed_data.xlsx'):
+    df = pd.DataFrame(data)
+    df.to_excel(filename, index=False)
+
+
