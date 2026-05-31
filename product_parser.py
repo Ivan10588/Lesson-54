@@ -10,7 +10,6 @@ from urllib.parse import urljoin, urlparse
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-
 def validate_url(url):
     """Проверяет, что URL корректен"""
     pattern = r'^https?://[^\s/$.?#].[^\s]*$'
@@ -26,12 +25,12 @@ def safe_request(url, retries=3):
         return None
 
     headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-    'Accept-Encoding': 'gzip, deflate',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
     }
 
     for attempt in range(retries):
@@ -76,9 +75,9 @@ def dns_parser(url):
 
                 item = {
                     'title': title,
-                    'price': price,
-                    'store': 'DNS',
-                    'url': urljoin(url, title_elem['href']) if title_elem.get('href') else url
+            'price': price,
+            'store': 'DNS',
+            'url': urljoin(url, title_elem['href']) if title_elem.get('href') else url
                 }
                 items.append(item)
         except AttributeError as e:
@@ -110,10 +109,10 @@ def eldorado_parser(url):
                     price = 0.0
 
                 item = {
-                    'title': title,
-                    'price': price,
-                    'store': 'Эльдорадо',
-                    'url': urljoin(url, title_elem['href']) if title_elem.get('href') else url
+            'title': title,
+            'price': price,
+            'store': 'Эльдорадо',
+            'url': urljoin(url, title_elem['href']) if title_elem.get('href') else url
                 }
                 items.append(item)
         except AttributeError as e:
@@ -138,28 +137,39 @@ def parse_multiple_pages(base_url, parser_func, max_pages=3):
         logger.info(f"Парсинг страницы {page}: {url}")
         data = parser_func(url)
         all_data.extend(data)
-        time.sleep(5)
+        time.sleep(3)
 
     return all_data
 
 def save_to_csv(data, filename='comparison_data.csv'):
     """Сохранение в CSV"""
+
+    if not data:
+        logger.warning(f"Нет данных для сохранения в {filename}")
+        return
+
     df = pd.DataFrame(data)
     df.to_csv(filename, index=False, encoding='utf-8')
     logger.info(f"Данные сохранены в {filename}")
 
 def save_to_excel(data, filename='comparison_data.xlsx'):
     """Сохранение в Excel"""
+
+    if not data:
+        logger.warning(f"Нет данных для сохранения в {filename}")
+        return
+
     df = pd.DataFrame(data)
     df.to_excel(filename, index=False)
     logger.info(f"Данные сохранены в {filename}")
+
 
 def compare_prices(dns_data, eldorado_data):
     """Сравнение цен между магазинами"""
     comparison = []
 
-    dns_dict = {item['title'].lower(): item for item in dns_data}
-    eldorado_dict = {item['title'].lower(): item for item in eldorado_data}
+    dns_dict = {item['title'].lower().strip(): item for item in dns_data}
+    eldorado_dict = {item['title'].lower().strip(): item for item in eldorado_data}
 
     common_titles = set(dns_dict.keys()) & set(eldorado_dict.keys())
 
@@ -187,7 +197,6 @@ def main_comparison_task():
     logger.info("Парсинг DNS...")
     dns_data = parse_multiple_pages(dns_url, dns_parser, max_pages=2)
 
-
     logger.info("Парсинг Эльдорадо...")
     eldorado_data = parse_multiple_pages(eldorado_url, eldorado_parser, max_pages=2)
 
@@ -198,8 +207,9 @@ def main_comparison_task():
 
         timestamp = time.strftime("%Y%m%d_%H%M%S")
 
-        save_to_csv(dns_data + eldorado_data, f"raw_data_{timestamp}.csv")
-        save_to_excel(dns_data + eldorado_data, f"raw_data_{timestamp}.xlsx")
+        if dns_data + eldorado_data:
+            save_to_csv(dns_data + eldorado_data, f"raw_data_{timestamp}.csv")
+            save_to_excel(dns_data + eldorado_data, f"raw_data_{timestamp}.xlsx")
 
         if comparison_data:
             save_to_csv(comparison_data, f"comparison_{timestamp}.csv")
@@ -209,6 +219,7 @@ def main_comparison_task():
             dns_better = sum(1 for item in comparison_data if item['better_price'] == 'DNS')
             eldorado_better = sum(1 for item in comparison_data if item['better_price'] == 'Эльдорадо')
             equal = sum(1 for item in comparison_data if item['better_price'] == 'Равные цены')
+
 
             logger.info("=== РЕЗУЛЬТАТЫ СРАВНЕНИЯ ===")
             logger.info(f"Всего найдено общих товаров: {total_common}")
@@ -233,11 +244,9 @@ def scheduled_comparison():
     main_comparison_task()
 
 schedule.every().day.at("10:00").do(scheduled_comparison)
-
 schedule.every().friday.at("15:00").do(scheduled_comparison)
 
 if __name__ == "__main__":
-
     logger.info("Запуск разового сравнения цен")
     results = main_comparison_task()
 
