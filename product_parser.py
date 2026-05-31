@@ -77,3 +77,11 @@ def safe_request(url, retries=3):
     logger.error(f"Не удалось получить данные после {retries} попыток")
     return None
 
+def scheduled_parsing():
+    logger.info("Запуск автоматического парсинга")
+    data = parse_multiple_pages("https://example.com/products")
+    save_to_csv(data, f"parsed_{time.strftime('%Y%m%d')}.csv")
+
+# Запуск 18-го числа каждого месяца
+schedule.every().month.on(18).do(scheduled_parsing)
+
