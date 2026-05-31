@@ -39,4 +39,16 @@ def extract_data(soup):
             continue
     return items
 
+def parse_multiple_pages(base_url, max_pages=5):
+    all_data = []
+    for page in range(1, max_pages + 1):
+        url = f"{base_url}?page={page}"
+        soup = basic_parser(url)
+        if soup:
+            data = extract_data(soup)
+            all_data.extend(data)
+            time.sleep(1)
+        else:
+            logger.error(f"Не удалось загрузить страницу {page}")
+    return all_data
 
