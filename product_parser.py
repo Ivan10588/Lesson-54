@@ -193,7 +193,7 @@ def compare_prices(emkashop_data, dayoffmood_data):
 
 def main_comparison_task():
     """Основной процесс сравнения цен"""
-    logger.info("Начало процесса сравнения цен emkashop и Эльдорадо")
+    logger.info("Начало процесса сравнения цен emkashop и dayoffmood")
 
     emkashop_url = "https://emkashop.ru/platya"
     dayoffmood_url = "https://dayoffmood.com/collection/"
