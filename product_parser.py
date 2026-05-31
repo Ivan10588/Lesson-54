@@ -59,17 +59,33 @@ def emkashop_parser(url):
     soup = BeautifulSoup(response.content, 'html.parser')
     items = []
 
-    products = soup.find_all('div', class_='catalog-product')
+    catalog_container = soup.find('div', id='cat-150')
+
+    if catalog_container:
+        products = catalog_container.find_all(
+            'div',
+            class_='body__noindex body__catalog l-ss-c-is-responsive popmechanic-desktop'
+        )
+    else:
+        logger.warning("Блок с ID 'cat-150' не найден, ищем товары по всей странице")
+        products = soup.find_all(
+            'div',
+            class_='body__noindex body__catalog l-ss-c-is-responsive popmechanic-desktop'
+        )
+
     for product in products:
         try:
             title_elem = product.find('a', class_='catalog-product__name')
             price_elem = product.find('div', class_='product-purchase__price')
 
             if title_elem and price_elem:
-                title = title_elem.text.strip()
-                price = price_elem.text.strip().replace(' ', '').replace('₽', '').replace(',', '.')
+                title = title_elem.get_text(strip=True)
+                price_text = price_elem.get_text(strip=True)\
+                    .replace(' ', '')\
+            .replace('₽', '')\
+            .replace(',', '.')
                 try:
-                    price = float(price)
+                    price = float(price_text)
                 except ValueError:
                     price = 0.0
 
@@ -83,6 +99,10 @@ def emkashop_parser(url):
         except AttributeError as e:
             logger.warning(f"Пропущен элемент emkashop из‑за ошибки: {e}")
             continue
+        except Exception as e:
+            logger.warning(f"Неожиданная ошибка при обработке товара: {e}")
+            continue
+
     logger.info(f"Найдено товаров: {len(items)}")
     return items
 
@@ -94,22 +114,33 @@ def dayoffmood_parser(url):
 
     soup = BeautifulSoup(response.content, 'html.parser')
     items = []
-    products = soup.find_all('div', class_='product-card')
+
+    catalog_container = soup.find('div', id='mse2_results')
+
+    if catalog_container:
+        products = catalog_container.find_all('div', class_='product-card')
+    else:
+        logger.warning("Блок с ID 'mse2_results' не найден, ищем товары по всей странице")
+        products = soup.find_all('div', class_='product-card')
+
     for product in products:
         try:
             title_elem = product.find('a', class_='product-card__title')
             price_elem = product.find('span', class_='product-card__price-value')
 
             if title_elem and price_elem:
-                title = title_elem.text.strip()
-                price = price_elem.text.strip().replace(' ', '').replace('₽', '').replace(',', '.')
+                title = title_elem.get_text(strip=True)
+                price_text = price_elem.get_text(strip=True)\
+                    .replace(' ', '')\
+            .replace('₽', '')\
+            .replace(',', '.')
                 try:
-                    price = float(price)
+                    price = float(price_text)
                 except ValueError:
                     price = 0.0
 
                 item = {
-            'title': title,
+                    'title': title,
             'price': price,
             'store': 'dayoffmood',
             'url': urljoin(url, title_elem['href']) if title_elem.get('href') else url
@@ -118,6 +149,10 @@ def dayoffmood_parser(url):
         except AttributeError as e:
             logger.warning(f"Пропущен элемент dayoffmood из‑за ошибки: {e}")
             continue
+        except Exception as e:
+            logger.warning(f"Неожиданная ошибка при обработке товара: {e}")
+            continue
+
     logger.info(f"Найдено товаров: {len(items)}")
     return items
 
