@@ -50,8 +50,8 @@ def safe_request(url, retries=3):
     logger.error(f"Не удалось получить данные после {retries} попыток: {url}")
     return None
 
-def dns_parser(url):
-    """Парсинг DNS"""
+def emkashop_parser(url):
+    """Парсинг emkashop"""
     response = safe_request(url)
     if not response:
         return []
@@ -76,18 +76,18 @@ def dns_parser(url):
                 item = {
                     'title': title,
             'price': price,
-            'store': 'DNS',
+            'store': 'emkashop',
             'url': urljoin(url, title_elem['href']) if title_elem.get('href') else url
                 }
                 items.append(item)
         except AttributeError as e:
-            logger.warning(f"Пропущен элемент DNS из‑за ошибки: {e}")
+            logger.warning(f"Пропущен элемент emkashop из‑за ошибки: {e}")
             continue
 
     return items
 
-def eldorado_parser(url):
-    """Парсинг Эльдорадо"""
+def dayoffmood_parser(url):
+    """Парсинг dayoffmood"""
     response = safe_request(url)
     if not response:
         return []
@@ -111,12 +111,12 @@ def eldorado_parser(url):
                 item = {
             'title': title,
             'price': price,
-            'store': 'Эльдорадо',
+            'store': 'dayoffmood',
             'url': urljoin(url, title_elem['href']) if title_elem.get('href') else url
                 }
                 items.append(item)
         except AttributeError as e:
-            logger.warning(f"Пропущен элемент Эльдорадо из‑за ошибки: {e}")
+            logger.warning(f"Пропущен элемент dayoffmood из‑за ошибки: {e}")
             continue
 
     return items
@@ -129,9 +129,9 @@ def parse_multiple_pages(base_url, parser_func, max_pages=3):
             url = base_url
         else:
             parsed_url = urlparse(base_url)
-            if 'dns-shop' in parsed_url.netloc:
+            if 'emkashop' in parsed_url.netloc:
                 url = f"{base_url}&page={page}"
-            elif 'eldorado' in parsed_url.netloc:
+            elif 'dayoffmood' in parsed_url.netloc:
                 url = f"{base_url}?page={page}"
 
         logger.info(f"Парсинг страницы {page}: {url}")
@@ -164,67 +164,67 @@ def save_to_excel(data, filename='comparison_data.xlsx'):
     logger.info(f"Данные сохранены в {filename}")
 
 
-def compare_prices(dns_data, eldorado_data):
+def compare_prices(emkashop_data, dayoffmood_data):
     """Сравнение цен между магазинами"""
     comparison = []
 
-    dns_dict = {item['title'].lower().strip(): item for item in dns_data}
-    eldorado_dict = {item['title'].lower().strip(): item for item in eldorado_data}
+    emkashop_dict = {item['title'].lower().strip(): item for item in emkashop_data}
+    dayoffmood_dict = {item['title'].lower().strip(): item for item in dayoffmood_data}
 
-    common_titles = set(dns_dict.keys()) & set(eldorado_dict.keys())
+    common_titles = set(emkashop_dict.keys()) & set(dayoffmood_dict.keys())
 
     for title in common_titles:
-        dns_price = dns_dict[title]['price']
-        eldorado_price = eldorado_dict[title]['price']
+        emkashop_price = emkashop_dict[title]['price']
+        dayoffmood_price = dayoffmood_dict[title]['price']
 
         comparison.append({
             'title': title,
-            'dns_price': dns_price,
-            'eldorado_price': eldorado_price,
-            'price_difference': dns_price - eldorado_price,
-            'better_price': 'DNS' if dns_price < eldorado_price else 'Эльдорадо' if eldorado_price < dns_price else 'Равные цены'
+            'emkashop_price': emkashop_price,
+            'dayoffmood_price': dayoffmood_price,
+            'price_difference': emkashop_price - dayoffmood_price,
+            'better_price': 'emkashop' if emkashop_price < dayoffmood_price else 'dayoffmood' if dayoffmood_price < emkashop_price else 'Равные цены'
         })
 
     return comparison
 
 def main_comparison_task():
     """Основной процесс сравнения цен"""
-    logger.info("Начало процесса сравнения цен DNS и Эльдорадо")
+    logger.info("Начало процесса сравнения цен emkashop и Эльдорадо")
 
-    dns_url = "https://www.dns-shop.ru/catalog/17a8a01d16404e77/smartfony/"
-    eldorado_url = "https://www.eldorado.ru/c/smartfony/"
+    emkashop_url = "https://emkashop.ru/platya"
+    dayoffmood_url = "https://dayoffmood.com/collection/"
 
-    logger.info("Парсинг DNS...")
-    dns_data = parse_multiple_pages(dns_url, dns_parser, max_pages=2)
+    logger.info("Парсинг emkashop...")
+    emkashop_data = parse_multiple_pages(emkashop_url, emkashop_parser, max_pages=2)
 
-    logger.info("Парсинг Эльдорадо...")
-    eldorado_data = parse_multiple_pages(eldorado_url, eldorado_parser, max_pages=2)
+    logger.info("Парсинг dayoffmood...")
+    dayoffmood_data = parse_multiple_pages(dayoffmood_url, dayoffmood_parser, max_pages=2)
 
     comparison_data = []
 
-    if dns_data or eldorado_data:
-        comparison_data = compare_prices(dns_data, eldorado_data)
+    if emkashop_data or dayoffmood_data:
+        comparison_data = compare_prices(emkashop_data, dayoffmood_data)
 
         timestamp = time.strftime("%Y%m%d_%H%M%S")
 
-        if dns_data + eldorado_data:
-            save_to_csv(dns_data + eldorado_data, f"raw_data_{timestamp}.csv")
-            save_to_excel(dns_data + eldorado_data, f"raw_data_{timestamp}.xlsx")
+        if emkashop_data + dayoffmood_data:
+            save_to_csv(emkashop_data + dayoffmood_data, f"raw_data_{timestamp}.csv")
+            save_to_excel(emkashop_data + dayoffmood_data, f"raw_data_{timestamp}.xlsx")
 
         if comparison_data:
             save_to_csv(comparison_data, f"comparison_{timestamp}.csv")
             save_to_excel(comparison_data, f"comparison_{timestamp}.xlsx")
 
             total_common = len(comparison_data)
-            dns_better = sum(1 for item in comparison_data if item['better_price'] == 'DNS')
-            eldorado_better = sum(1 for item in comparison_data if item['better_price'] == 'Эльдорадо')
+            emkashop_better = sum(1 for item in comparison_data if item['better_price'] == 'emkashop')
+            dayoffmood_better = sum(1 for item in comparison_data if item['better_price'] == 'dayoffmood')
             equal = sum(1 for item in comparison_data if item['better_price'] == 'Равные цены')
 
 
             logger.info("=== РЕЗУЛЬТАТЫ СРАВНЕНИЯ ===")
             logger.info(f"Всего найдено общих товаров: {total_common}")
-            logger.info(f"Выгоднее в DNS: {dns_better} товаров")
-            logger.info(f"Выгоднее в Эльдорадо: {eldorado_better} товаров")
+            logger.info(f"Выгоднее в emkashop: {dns_better} товаров")
+            logger.info(f"Выгоднее в dayoffmood: {eldorado_better} товаров")
             logger.info(f"Цены равны: {equal} товаров")
 
             if comparison_data:
