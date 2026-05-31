@@ -20,4 +20,23 @@ def basic_parser(url):
         print(f"Ошибка: {response.status_code}")
         return None
 
+def extract_data(soup):
+    items = []
+    products = soup.find_all('div', class_='product-item')
+    for product in products:
+        try:
+            title = product.find('h3', class_='title').text.strip()
+            price = product.find('span', class_='price').text.strip()
+            description = product.find('p', class_='description').text.strip() if product.find('p', class_='description') else 'Нет описания'
+            item = {
+                'title': title,
+                'price': price,
+                'description': description
+            }
+            items.append(item)
+        except AttributeError as e:
+            logger.warning(f"Пропущен элемент из‑за ошибки: {e}")
+            continue
+    return items
+
 
